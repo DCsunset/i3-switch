@@ -33,6 +33,15 @@ To change the options for i3-switch in your i3 config:
 exec i3-switch --max-len 1000 --timeout 400
 ```
 
+## Consecutive Switching
+
+When switching before it times out,
+the history within the consecutive switch won't be recorded.
+
+For example, at first the records are `DCBA`,
+after switch twice consecutively,
+it should become `BDCA`.
+
 
 ## Options
 

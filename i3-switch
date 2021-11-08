@@ -16,11 +16,13 @@ pid_file = '{XDG_RUNTIME_DIR}/i3-switch.pid'.format_map(os.environ)
 windows = None
 # last visited
 last_visit = {
-	# last visited window id
-	"window": None,
+	# last visited window id (start point)
+	"start": None,
+	# last visited window id (end point)
+	"end": None,
 	"timestamp": None,
 	# timeout for consecutive switching (ms)
-	"timeout": None
+	"timeout": None,
 }
 
 def current_time():
@@ -43,8 +45,38 @@ async def on_signal(i3, sig):
 		if diff < last_visit["timeout"] and len(windows) > 0:
 			consecutive = True
 		else:
-			# reset if not consecutive
-			last_visit["window"] = None
+			if last_visit["start"]:
+				# remove the history between consecutive switching
+				# keep the new windows
+				new_windows = []
+				# whether it enters the consecutive range
+				consecutive_range = False
+				while len(windows) > 0:
+					window = windows.popleft()
+
+					if window == last_visit["end"]:
+						consecutive_range = True
+					
+					if not consecutive_range:
+						# keep the new windows (including the one before end)
+						new_windows.append(window)
+
+					if window == last_visit["start"]:
+						# add the start window back
+						windows.appendleft(last_visit["start"])
+						# add the new windows 
+						while len(new_windows) > 0:
+							new_window = new_windows.pop()
+							# remove duplicate of current_window in history
+							try:
+								# the current window might be newly added
+								windows.remove(current_window)
+							except:
+								pass
+							windows.appendleft(new_window)
+						break
+
+			last_visit["start"] = None
 
 	last_visit["timestamp"] = current_time()
 
@@ -57,7 +89,7 @@ async def on_signal(i3, sig):
 		# go to the last position in history
 		if consecutive:
 			# stop at next if found
-			if window_id == last_visit["window"]:
+			if window_id == last_visit["start"]:
 				consecutive = False
 			continue
 
@@ -76,8 +108,9 @@ async def on_signal(i3, sig):
 			continue
 	
 		# set last window if None
-		if last_visit["window"] == None:
-			last_visit["window"] = current_window
+		if last_visit["start"] == None:
+			last_visit["start"] = current_window
+		last_visit["end"] = current_window
 
 		# switch focus (this will add window_id to windows)
 		cmd = f'[con_id={window_id}] focus'
@@ -99,11 +132,6 @@ async def on_window_focus(i3, event):
 	if len(windows) > 0 and current_window == windows[0]:
 		return
 
-	# remove duplicates if it exists
-	try:
-		windows.remove(current_window)
-	except:
-		pass
 	windows.appendleft(current_window)
 
 def on_window_close(i3, event):
