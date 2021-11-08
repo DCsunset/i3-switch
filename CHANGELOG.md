@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.1](https://github.com/DCsunset/i3-switch/compare/v1.1.0...v1.1.1) (2021-11-08)
+
+
+### Bug Fixes
+
+* fix scratchpad check ([26b21e1](https://github.com/DCsunset/i3-switch/commit/26b21e1d74ec79e78f70839341344a05875457e1))
+
 ## 1.1.0 (2021-11-08)
 
 
