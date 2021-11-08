@@ -8,6 +8,7 @@ import sys
 import atexit
 from collections import deque
 from i3ipc.aio import Connection
+from i3ipc import Event
 import time
 
 pid_file = '{XDG_RUNTIME_DIR}/i3-switch.pid'.format_map(os.environ)
@@ -33,7 +34,6 @@ async def on_signal(i3, sig):
 	current_container = root.find_focused()
 	current_workspace = current_container.workspace().id
 	current_window = current_container.id
-	scratchpad = root.scratchpad().id
 	consecutive = False
 
 	if last_visit["timestamp"]:
@@ -61,7 +61,7 @@ async def on_signal(i3, sig):
 			continue
 
 		container = root.find_by_id(window_id)
-		# ignore window not existing
+		# skip window not existing
 		if not container:
 			continue
 
@@ -69,11 +69,7 @@ async def on_signal(i3, sig):
 		if sig == signal.SIGUSR2 and current_workspace != window_workspace:
 			# only switch between windows in the space workspace
 			continue
-		
-		# skip windows in scratchpad
-		if window_workspace == scratchpad:
-			continue
-
+	
 		# set last window if None
 		if last_visit["window"] == None:
 			last_visit["window"] = current_window
@@ -89,20 +85,33 @@ def exit_handler():
 	os.remove(pid_file)
 
 
-def on_window_focus(conn, event):
-	if event.change == 'focus':
-		current_window = event.container.id
-		# do not insert when the previous window is the same
-		if len(windows) > 0 and current_window == windows[0]:
-			return
+async def on_window_focus(i3, event):
+	root = await i3.get_tree()
+	focused = root.find_focused()
+	current_window = focused.id
+	current_workspace = focused.workspace().id
+	scratchpad = root.scratchpad().id
+	# do not insert when the previous window is the same
+	if len(windows) > 0 and current_window == windows[0]:
+		return
+	
+	# skip windows in scratchpad
+	if current_workspace == scratchpad:
+		return
 
-		# remove duplicates if it exists
-		try:
-			windows.remove(current_window)
-		except:
-			pass
-		windows.appendleft(current_window)
+	# remove duplicates if it exists
+	try:
+		windows.remove(current_window)
+	except:
+		pass
+	windows.appendleft(current_window)
 
+def on_window_close(i3, event):
+	try:
+		# remove closed windows
+		windows.remove(event.container.id)
+	except:
+		pass
 
 async def main():
 	with open(pid_file, 'w') as file:
@@ -113,7 +122,8 @@ async def main():
 	loop = asyncio.get_event_loop()
 	loop.add_signal_handler(signal.SIGUSR1, lambda: asyncio.create_task(on_signal(i3, signal.SIGUSR1)))
 	loop.add_signal_handler(signal.SIGUSR2, lambda: asyncio.create_task(on_signal(i3, signal.SIGUSR2)))
-	i3.on('window::focus', on_window_focus)
+	i3.on(Event.WINDOW_FOCUS, on_window_focus)
+	i3.on(Event.WINDOW_CLOSE, on_window_close)
 
 	await i3.main()
 
