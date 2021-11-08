@@ -1,5 +1,7 @@
 # i3-switch
 
+[![PyPI](https://img.shields.io/pypi/v/i3-switch)](https://pypi.org/project/i3-switch/)
+
 i3 script to switch between windows in history.
 
 This script is inspired by [i3-swap-focus](https://github.com/olivierlemoal/i3-swap-focus).
@@ -25,8 +27,16 @@ bindsym $mod+Tab exec pkill -USR1 -F "${XDG_RUNTIME_DIR}/i3-switch.pid"
 # bindsym $mod+Tab exec pkill -USR2 -F "${XDG_RUNTIME_DIR}/i3-switch.pid"
 ```
 
-To change the max length of the window history records in your i3 config:
+To change the options for i3-switch in your i3 config:
 
 ```
-exec i3-switch --max-len 1000
+exec i3-switch --max-len 1000 --timeout 400
 ```
+
+
+## Options
+
+| Name        | Description               | Default |
+| ----------- | ------------------------- | ------- |
+| `--max-len` | Max length of the window deque | `100`     |
+| `--timeout` | Timeout for consecutive switching in milliseconds | `500` |
