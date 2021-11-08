@@ -8,21 +8,56 @@ import sys
 import atexit
 from collections import deque
 from i3ipc.aio import Connection
+import time
 
 pid_file = '{XDG_RUNTIME_DIR}/i3-switch.pid'.format_map(os.environ)
 # most recent windows are put at front (initialized after parsing args)
 windows = None
+# last visited
+last_visit = {
+	# last visited window id
+	"window": None,
+	"timestamp": None,
+	# timeout for consecutive switching (ms)
+	"timeout": None
+}
+
+def current_time():
+	return time.time_ns() // 1000000
 
 async def on_signal(i3, sig):
+	global windows
+	global last_visit
+
 	root = await i3.get_tree()
 	current_container = root.find_focused()
 	current_workspace = current_container.workspace().id
 	current_window = current_container.id
 	scratchpad = root.scratchpad().id
+	consecutive = False
+
+	if last_visit["timestamp"]:
+		diff = current_time() - last_visit["timestamp"]
+		# consecutive switching
+		if diff < last_visit["timeout"] and len(windows) > 0:
+			consecutive = True
+		else:
+			# reset if not consecutive
+			last_visit["window"] = None
+
+	last_visit["timestamp"] = current_time()
 
 	for window_id in windows:
-		# skip current window
+		# skip current
 		if window_id == current_window:
+			continue
+
+		# consecutive switching
+		# go to the last position in history
+		if consecutive:
+			# stop at next if found
+			if window_id == last_visit["window"]:
+				consecutive = False
 			continue
 
 		container = root.find_by_id(window_id)
@@ -38,14 +73,19 @@ async def on_signal(i3, sig):
 		# skip windows in scratchpad
 		if window_workspace == scratchpad:
 			continue
-		
-		# switch focus
+
+		# set last window if None
+		if last_visit["window"] == None:
+			last_visit["window"] = current_window
+
+		# switch focus (this will add window_id to windows)
 		cmd = f'[con_id={window_id}] focus'
 		await i3.command(cmd)
 		break
 
 
 def exit_handler():
+	global pid_file
 	os.remove(pid_file)
 
 
@@ -56,6 +96,11 @@ def on_window_focus(conn, event):
 		if len(windows) > 0 and current_window == windows[0]:
 			return
 
+		# remove duplicates if it exists
+		try:
+			windows.remove(current_window)
+		except:
+			pass
 		windows.appendleft(current_window)
 
 
@@ -73,9 +118,14 @@ async def main():
 	await i3.main()
 
 
-parser = argparse.ArgumentParser(description="i3 script to switch between windows in history")
+parser = argparse.ArgumentParser(
+	description="i3 script to switch between windows in history",
+	formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
 parser.add_argument("--max-len", type=int, default=100, help="Max length of the window deque")
+parser.add_argument("--timeout", type=int, default=500, help="Timeout for consecutive switching in milliseconds")
 args = parser.parse_args()
 
 windows = deque(maxlen=args.max_len)
+last_visit["timeout"] = args.timeout
 asyncio.run(main())
