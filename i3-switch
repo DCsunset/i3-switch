@@ -34,6 +34,7 @@ async def on_signal(i3, sig):
 	current_container = root.find_focused()
 	current_workspace = current_container.workspace().id
 	current_window = current_container.id
+	scratchpad = root.scratchpad().id
 	consecutive = False
 
 	if last_visit["timestamp"]:
@@ -69,6 +70,10 @@ async def on_signal(i3, sig):
 		if sig == signal.SIGUSR2 and current_workspace != window_workspace:
 			# only switch between windows in the space workspace
 			continue
+
+		# skip windows in scratchpad
+		if window_workspace == scratchpad:
+			continue
 	
 		# set last window if None
 		if last_visit["window"] == None:
@@ -90,13 +95,8 @@ async def on_window_focus(i3, event):
 	focused = root.find_focused()
 	current_window = focused.id
 	current_workspace = focused.workspace().id
-	scratchpad = root.scratchpad().id
 	# do not insert when the previous window is the same
 	if len(windows) > 0 and current_window == windows[0]:
-		return
-	
-	# skip windows in scratchpad
-	if current_workspace == scratchpad:
 		return
 
 	# remove duplicates if it exists
