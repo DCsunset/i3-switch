@@ -168,4 +168,9 @@ args = parser.parse_args()
 
 windows = deque(maxlen=args.max_len)
 last_visit["timeout"] = args.timeout
-asyncio.run(main())
+
+try:
+	asyncio.run(main())
+except KeyboardInterrupt:
+	# Graceful exit
+	pass
