@@ -5,8 +5,9 @@
 i3 script to switch between windows in history.
 
 This script is inspired by [i3-swap-focus](https://github.com/olivierlemoal/i3-swap-focus).
-It provides a configurable history length and ignore windows in scratchpad.
-Besides, it can skip the closed windows or windows not in the current workspace.
+
+It provides a configurable history length and supports consecutive switching within the history.
+Besides, it can skip the closed windows, windows in scratchpad, or windows not in the current workspace.
 
 ## Installation
 
@@ -41,6 +42,11 @@ the history within the consecutive switch won't be recorded.
 For example, at first the records are `DCBA`,
 after switch twice consecutively,
 it should become `BDCA`.
+
+Internally, the process is as follows:
+`DCBA` -> `CDCBA` -> `BCDCBA` -> `BDCA` (cleanup after timeout).
+This process is necessary because the signal itself is stateless,
+so the state is kept in the history.
 
 
 ## Options
