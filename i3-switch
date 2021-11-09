@@ -28,6 +28,10 @@ last_visit = {
 def current_time():
 	return time.time_ns() // 1000000
 
+# Debug
+def debug(windows_deque):
+	print(list(map(lambda x: str(x)[-3:], list(windows_deque))))
+
 async def on_signal(i3, sig):
 	global windows
 	global last_visit
@@ -81,27 +85,28 @@ async def on_signal(i3, sig):
 	last_visit["timestamp"] = current_time()
 
 	# the clone of last visited windows
-	visited_windows = deque(last_visit["windows"])
+	visited_windows = last_visit["windows"].copy()
 	for window_id in windows:
-		# skip current
-		if window_id == current_window:
-			continue
-
 		# consecutive switching
 		# go to the last position in history
 		if consecutive:
 			# stop at next if found
 			if window_id == last_visit["windows"][-1]:
 				consecutive = False
-			continue
+			else:
+				continue
 
 		# skip visited windows (must be placed here to prevent closed windows)
-		if len(visited_windows) > 0 and window_id == visited_windows.popleft():
+		if len(visited_windows) > 0 and window_id == visited_windows.pop():
 			continue
 
 		container = root.find_by_id(window_id)
 		# skip window not existing
 		if not container:
+			continue
+
+		# skip current
+		if window_id == current_window:
 			continue
 
 		window_workspace = container.workspace().id
