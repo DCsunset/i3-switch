@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.2.2](https://github.com/DCsunset/i3-switch/compare/v1.2.1...v1.2.2) (2021-11-14)
+
+
+### Bug Fixes
+
+* add exception handling ([514549e](https://github.com/DCsunset/i3-switch/commit/514549e4224224b2247d7561f912b019ff406631))
+
 ### [1.2.1](https://github.com/DCsunset/i3-switch/compare/v1.2.0...v1.2.1) (2021-11-09)
 
 
