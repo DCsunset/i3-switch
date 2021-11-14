@@ -36,96 +36,100 @@ async def on_signal(i3, sig):
 	global windows
 	global last_visit
 
-	root = await i3.get_tree()
-	current_container = root.find_focused()
-	current_workspace = current_container.workspace().id
-	current_window = current_container.id
-	scratchpad = root.scratchpad().id
-	consecutive = False
+	# get_tree may throw an error
+	try:
+		root = await i3.get_tree()
+		current_container = root.find_focused()
+		current_workspace = current_container.workspace().id
+		current_window = current_container.id
+		scratchpad = root.scratchpad().id
+		consecutive = False
 
-	if last_visit["timestamp"]:
-		diff = current_time() - last_visit["timestamp"]
-		# consecutive switching
-		if diff < last_visit["timeout"] and len(windows) > 0 and sig == last_visit["signal"]:
-			consecutive = True
-		else:
-			if len(last_visit["windows"]) > 0:
-				# remove the history between consecutive switching
-				# keep the new windows
-				new_windows = []
-				# whether it enters the consecutive range
-				consecutive_range = False
-				while len(windows) > 0:
-					window = windows.popleft()
-
-					if window == last_visit["windows"][0]:
-						consecutive_range = True
-					
-					if not consecutive_range:
-						# keep the new windows (including the one before end)
-						new_windows.append(window)
-
-					if window == last_visit["windows"][-1]:
-						# add the start window back
-						windows.appendleft(window)
-						# add the new windows 
-						while len(new_windows) > 0:
-							new_window = new_windows.pop()
-							# remove duplicate of current_window in history
-							try:
-								# the current window might be newly added
-								windows.remove(current_window)
-							except:
-								pass
-							windows.appendleft(new_window)
-						break
-
-			last_visit["windows"].clear()
-
-	last_visit["timestamp"] = current_time()
-
-	# the clone of last visited windows
-	visited_windows = last_visit["windows"].copy()
-	for window_id in windows:
-		# consecutive switching
-		# go to the last position in history
-		if consecutive:
-			# stop at next if found
-			if window_id == last_visit["windows"][-1]:
-				consecutive = False
+		if last_visit["timestamp"]:
+			diff = current_time() - last_visit["timestamp"]
+			# consecutive switching
+			if diff < last_visit["timeout"] and len(windows) > 0 and sig == last_visit["signal"]:
+				consecutive = True
 			else:
+				if len(last_visit["windows"]) > 0:
+					# remove the history between consecutive switching
+					# keep the new windows
+					new_windows = []
+					# whether it enters the consecutive range
+					consecutive_range = False
+					while len(windows) > 0:
+						window = windows.popleft()
+
+						if window == last_visit["windows"][0]:
+							consecutive_range = True
+						
+						if not consecutive_range:
+							# keep the new windows (including the one before end)
+							new_windows.append(window)
+
+						if window == last_visit["windows"][-1]:
+							# add the start window back
+							windows.appendleft(window)
+							# add the new windows 
+							while len(new_windows) > 0:
+								new_window = new_windows.pop()
+								# remove duplicate of current_window in history
+								try:
+									# the current window might be newly added
+									windows.remove(current_window)
+								except:
+									pass
+								windows.appendleft(new_window)
+							break
+
+				last_visit["windows"].clear()
+
+		last_visit["timestamp"] = current_time()
+
+		# the clone of last visited windows
+		visited_windows = last_visit["windows"].copy()
+		for window_id in windows:
+			# consecutive switching
+			# go to the last position in history
+			if consecutive:
+				# stop at next if found
+				if window_id == last_visit["windows"][-1]:
+					consecutive = False
+				else:
+					continue
+
+			# skip visited windows (must be placed here to prevent closed windows)
+			if len(visited_windows) > 0 and window_id == visited_windows.pop():
 				continue
 
-		# skip visited windows (must be placed here to prevent closed windows)
-		if len(visited_windows) > 0 and window_id == visited_windows.pop():
-			continue
+			container = root.find_by_id(window_id)
+			# skip window not existing
+			if not container:
+				continue
 
-		container = root.find_by_id(window_id)
-		# skip window not existing
-		if not container:
-			continue
+			# skip current
+			if window_id == current_window:
+				continue
 
-		# skip current
-		if window_id == current_window:
-			continue
+			window_workspace = container.workspace().id
+			if sig == signal.SIGUSR2 and current_workspace != window_workspace:
+				# only switch between windows in the space workspace
+				continue
 
-		window_workspace = container.workspace().id
-		if sig == signal.SIGUSR2 and current_workspace != window_workspace:
-			# only switch between windows in the space workspace
-			continue
+			# skip windows in scratchpad
+			if window_workspace == scratchpad:
+				continue
+		
+			# record current window
+			last_visit["windows"].insert(0, current_window)
+			last_visit["signal"] = sig
 
-		# skip windows in scratchpad
-		if window_workspace == scratchpad:
-			continue
-	
-		# record current window
-		last_visit["windows"].insert(0, current_window)
-		last_visit["signal"] = sig
-
-		# switch focus (this will add window_id to windows)
-		cmd = f'[con_id={window_id}] focus'
-		await i3.command(cmd)
-		break
+			# switch focus (this will add window_id to windows)
+			cmd = f'[con_id={window_id}] focus'
+			await i3.command(cmd)
+			break
+	except Exception as e:
+		print(e, file=sys.stderr)
 
 
 def exit_handler():
@@ -134,15 +138,19 @@ def exit_handler():
 
 
 async def on_window_focus(i3, event):
-	root = await i3.get_tree()
-	focused = root.find_focused()
-	current_window = focused.id
-	current_workspace = focused.workspace().id
-	# do not insert when the previous window is the same
-	if len(windows) > 0 and current_window == windows[0]:
-		return
+	try:
+		root = await i3.get_tree()
+		focused = root.find_focused()
+		current_window = focused.id
+		current_workspace = focused.workspace().id
+		# do not insert when the previous window is the same
+		if len(windows) > 0 and current_window == windows[0]:
+			return
 
-	windows.appendleft(current_window)
+		windows.appendleft(current_window)
+	except Exception as e:
+		print(e, file=sys.stderr)
+
 
 async def main():
 	with open(pid_file, 'w') as file:
