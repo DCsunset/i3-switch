@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.2.3](https://github.com/DCsunset/i3-switch/compare/v1.2.2...v1.2.3) (2021-12-03)
+
+
+### Bug Fixes
+
+* restart main function if crashed ([462014a](https://github.com/DCsunset/i3-switch/commit/462014aea76490d8178f71b33e2f22ad8f5b1352))
+
 ### [1.2.2](https://github.com/DCsunset/i3-switch/compare/v1.2.1...v1.2.2) (2021-11-14)
 
 
