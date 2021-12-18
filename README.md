@@ -23,9 +23,9 @@ Add the following lines to your i3 config file:
 # Start i3-switch process
 exec i3-switch
 
-bindsym $mod+Tab exec pkill -USR1 -F "${XDG_RUNTIME_DIR}/i3-switch.pid"
+bindsym $mod+Tab exec pkill -USR1 -F "/tmp/i3-switch.pid"
 # Switch in the same workspaces
-# bindsym $mod+Tab exec pkill -USR2 -F "${XDG_RUNTIME_DIR}/i3-switch.pid"
+# bindsym $mod+Tab exec pkill -USR2 -F "/tmp/i3-switch.pid"
 ```
 
 To change the options for i3-switch in your i3 config:
