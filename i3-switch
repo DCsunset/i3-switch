@@ -11,7 +11,7 @@ from i3ipc.aio import Connection
 from i3ipc import Event
 import time
 
-pid_file = '{XDG_RUNTIME_DIR}/i3-switch.pid'.format_map(os.environ)
+pid_file = '/tmp/i3-switch.pid'
 # most recent windows are put at front (initialized after parsing args)
 windows = None
 # last visited
