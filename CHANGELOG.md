@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.2.4](https://github.com/DCsunset/i3-switch/compare/v1.2.3...v1.2.4) (2021-12-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* fix pid path
+
+### Bug Fixes
+
+* fix pid path ([0f21ba4](https://github.com/DCsunset/i3-switch/commit/0f21ba46b310c9628ecb3bf45caacca63accf070))
+
 ### [1.2.3](https://github.com/DCsunset/i3-switch/compare/v1.2.2...v1.2.3) (2021-12-03)
 
 
